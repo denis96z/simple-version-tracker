@@ -1,9 +1,0 @@
-### IDE ###
-/.idea/
-/.vscode/
-
-### Cargo ###
-/target/
-
-### Local ###
-/local/

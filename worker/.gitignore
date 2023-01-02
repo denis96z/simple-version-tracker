@@ -1,0 +1,9 @@
+### IDE ###
+/.idea/
+/.vscode/
+
+### bin ###
+/build/
+
+### local ###
+/local/
