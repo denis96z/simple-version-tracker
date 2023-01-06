@@ -7,6 +7,8 @@ import (
 	"strconv"
 
 	"github.com/jackc/pgx/v4"
+
+	"github.com/denis96z/simple-version-tracker/worker/pkg/data"
 )
 
 type Storage struct {
@@ -50,16 +52,9 @@ func (s *Storage) Finit(ctx context.Context) error {
 	return nil
 }
 
-type ExternalProjectInfo struct {
-	ID                uint32
-	Name              string
-	LatestVersion     string
-	ScriptDockerImage string
-}
-
-func (s *Storage) SelectExternalProjectsToBeCheckedForUpdate(ctx context.Context) ([]ExternalProjectInfo, error) {
+func (s *Storage) SelectExternalProjectsToBeCheckedForUpdate(ctx context.Context) ([]data.ExternalProjectInfo, error) {
 	rows, err := s.conn.Query(
-		ctx, `SELECT xp.id, xp.name, xp.latest_version, chk.script_docker_image FROM external_project xp JOIN external_project_version_check chk ON xp.id = chk.external_project_id WHERE NOW() > (chk.last_check_ts + (chk.check_interval_seconds * INTERVAL '1 second'))`,
+		ctx, `SELECT xp.id, xp.name, xp.latest_version, r.host, c.username, c.password, img.name FROM external_project xp JOIN external_project_version_check chk ON xp.id = chk.external_project_id JOIN docker_image img ON chk.script_docker_image_id = img.id JOIN docker_registry r ON img.registry_id = r.id JOIN docker_registry_credentials c ON img.access_credentials_id = c.id WHERE NOW() > (chk.last_check_ts + (chk.check_interval_seconds * INTERVAL '1 second'))`,
 	)
 	if err != nil {
 		return nil, fmt.Errorf(
@@ -69,10 +64,19 @@ func (s *Storage) SelectExternalProjectsToBeCheckedForUpdate(ctx context.Context
 
 	defer rows.Close()
 
-	arr := make([]ExternalProjectInfo, 0)
+	arr := make([]data.ExternalProjectInfo, 0)
 	for rows.Next() {
-		var info ExternalProjectInfo
-		if err = rows.Scan(&info.ID, &info.Name, &info.LatestVersion, &info.ScriptDockerImage); err != nil {
+		var info data.ExternalProjectInfo
+		err = rows.Scan(
+			&info.ID,
+			&info.Name,
+			&info.LatestVersion,
+			&info.CheckerImage.Registry.Host,
+			&info.CheckerImage.AccessCredentials.Username,
+			&info.CheckerImage.AccessCredentials.Password,
+			&info.CheckerImage.Name,
+		)
+		if err != nil {
 			return nil, fmt.Errorf(
 				"failed to scan external project info: %w", err,
 			)

@@ -6,8 +6,10 @@ import (
 
 	"github.com/spf13/pflag"
 
+	"github.com/denis96z/simple-version-tracker/worker/pkg/checker"
 	"github.com/denis96z/simple-version-tracker/worker/pkg/config"
 	"github.com/denis96z/simple-version-tracker/worker/pkg/logs"
+	"github.com/denis96z/simple-version-tracker/worker/pkg/loop"
 	"github.com/denis96z/simple-version-tracker/worker/pkg/storage"
 )
 
@@ -48,4 +50,11 @@ func main() {
 			logs.Error("failed to finit storage: ", err)
 		}
 	}()
+
+	lp := loop.NewLoop(
+		conf.Loop, strg, checker.NewChecker(conf.Checker),
+	)
+	if err = lp.Run(context.Background()); err != nil {
+		logs.Error("failed to run loop: ", err)
+	}
 }
