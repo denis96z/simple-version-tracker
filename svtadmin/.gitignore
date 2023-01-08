@@ -1,0 +1,15 @@
+### IDE ###
+/.idea/
+/.vscode/
+
+### python ###
+__pycache__
+
+### virtualenv ###
+/venv/
+
+### django ###
+/static/
+
+### local ###
+db.sqlite3
